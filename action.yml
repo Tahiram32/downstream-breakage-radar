@@ -1,6 +1,9 @@
 name: "Downstream Breakage Radar"
 description: "Detects breaking changes before release and generates migration notes."
 author: "Tahiram32"
+branding:
+  icon: 'shield'
+  color: 'yellow'
 
 inputs:
   base-ref:
