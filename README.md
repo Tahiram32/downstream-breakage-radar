@@ -60,7 +60,7 @@ jobs:
           fetch-depth: 0
 
       - name: Scan for breaking changes
-        uses: Tahiram32/downstream-breakage-radar@main
+        uses: Tahiram32/downstream-breakage-radar@v0.5.0
         with:
           base-ref: origin/main
           format: markdown
