@@ -68,6 +68,7 @@ class Finding:
     path: str
     message: str
     migration_note: str
+    line: int = 1
 
 
 # ---------------------------------------------------------------------------
