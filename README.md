@@ -156,7 +156,7 @@ When using as a GitHub Action, pass configuration via the `with` keyword. The ac
 - [x] Diff-aware API surface detection (AST-level analysis)
 - [x] Language-specific adapters for smarter risk scoring (Python added)
 - [x] Automated release-note drafting
-- [ ] Downstream repository impact hints
+- [x] Downstream repository impact hints
 - [x] `fail-on` threshold to block PRs above a risk level
 - [x] Native GitHub inline annotations (Workflow Commands)
 

@@ -108,24 +108,26 @@ def analyze_python_ast(repo_path: Path, changed_files: Iterable[str], base_ref: 
         # 1. Check for removed classes
         for cls in old_classes:
             if cls not in new_classes:
+                search_url = f"https://github.com/search?q={cls}+language%3Apython&type=code"
                 findings.append(
                     Finding(
                         severity="high",
                         path=path,
                         message=f"Removed public class: {cls}",
-                        migration_note=f"The class '{cls}' was removed from {path}. Consumers will break.",
+                        migration_note=f"The class '{cls}' was removed from {path}. Consumers will break. [Check downstream impact]({search_url})",
                     )
                 )
 
         # 2. Check for removed functions or signature changes
         for name, old_func in old_funcs.items():
+            search_url = f"https://github.com/search?q={name}+language%3Apython&type=code"
             if name not in new_funcs:
                 findings.append(
                     Finding(
                         severity="high",
                         path=path,
                         message=f"Removed public function: {name}",
-                        migration_note=f"The function '{name}' was removed from {path}. Consumers will break.",
+                        migration_note=f"The function '{name}' was removed from {path}. Consumers will break. [Check downstream impact]({search_url})",
                     )
                 )
             else:
@@ -141,7 +143,7 @@ def analyze_python_ast(repo_path: Path, changed_files: Iterable[str], base_ref: 
                             severity="high",
                             path=path,
                             message=f"Function signature changed: {name}",
-                            migration_note=f"The function '{name}' in {path} now requires more positional arguments.",
+                            migration_note=f"The function '{name}' in {path} now requires more positional arguments. [Check downstream impact]({search_url})",
                         )
                     )
                     continue
@@ -157,7 +159,7 @@ def analyze_python_ast(repo_path: Path, changed_files: Iterable[str], base_ref: 
                             severity="high",
                             path=path,
                             message=f"Function signature changed: {name}",
-                            migration_note=f"The function '{name}' in {path} removed arguments: {', '.join(missing_args)}.",
+                            migration_note=f"The function '{name}' in {path} removed arguments: {', '.join(missing_args)}. [Check downstream impact]({search_url})",
                         )
                     )
 

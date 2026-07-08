@@ -103,6 +103,7 @@ def analyze_diff(
             m = pattern.match(line)
             if m:
                 name = m.group(1)
+                search_url = f"https://github.com/search?q={name}&type=code"
                 findings.append(
                     Finding(
                         severity="high",
@@ -110,7 +111,7 @@ def analyze_diff(
                         message=f"Removed definition: {name}",
                         migration_note=(
                             f"'{name}' was removed from {current_file}. "
-                            "Downstream consumers importing or calling this symbol will break."
+                            f"[Check downstream impact]({search_url})"
                         ),
                     )
                 )
