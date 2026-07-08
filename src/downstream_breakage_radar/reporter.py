@@ -90,3 +90,26 @@ def format_markdown(report: dict[str, Any]) -> str:
         lines.append(f"- **`{finding['path']}`**: {finding['migration_note']}")
 
     return "\n".join(lines)
+
+
+def format_github(report: dict[str, Any]) -> str:
+    """Format *report* as GitHub Actions workflow commands suitable for inline annotations."""
+    lines = []
+    for finding in report["findings"]:
+        sev = finding["severity"]
+        if sev == "high":
+            cmd = "error"
+        elif sev == "medium":
+            cmd = "warning"
+        elif sev == "low":
+            cmd = "notice"
+        else:
+            continue
+            
+        path = finding["path"]
+        title = finding["message"].replace(",", " ")
+        note = finding["migration_note"]
+        
+        lines.append(f"::{cmd} file={path},title={title}::{note}")
+        
+    return "\n".join(lines)

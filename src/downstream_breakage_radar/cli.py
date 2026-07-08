@@ -13,7 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base", default="origin/main", help="Base ref for git diff.")
     parser.add_argument(
         "--format",
-        choices=("text", "json", "markdown"),
+        choices=("text", "json", "markdown", "github"),
         default="text",
         help="Output format."
     )
@@ -48,6 +48,8 @@ def main() -> int:
         print(reporter.format_json(report))
     elif args.format == "markdown":
         print(reporter.format_markdown(report))
+    elif args.format == "github":
+        print(reporter.format_github(report))
     else:
         print(reporter.format_text(report))
 

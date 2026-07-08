@@ -152,7 +152,7 @@ When using as a GitHub Action, pass configuration via the `with` keyword. The ac
 - [ ] Automated release-note drafting
 - [ ] Downstream repository impact hints
 - [ ] `fail-on` threshold to block PRs above a risk level
-- [ ] SARIF output for GitHub Security tab integration
+- [x] Native GitHub inline annotations (Workflow Commands)
 
 ## 🤝 Contributing
 
