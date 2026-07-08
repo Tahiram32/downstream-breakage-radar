@@ -47,6 +47,9 @@ def format_text(report: dict[str, Any]) -> str:
     if not report["findings"]:
         lines.append("")
         lines.append("No obvious breakage risks found.")
+        
+    lines.append("")
+    lines.append("💡 Support this project: https://github.com/sponsors/Tahiram32")
     return "\n".join(lines)
 
 
@@ -88,6 +91,13 @@ def format_markdown(report: dict[str, Any]) -> str:
     lines += ["", "### Migration notes", ""]
     for finding in report["findings"]:
         lines.append(f"- **`{finding['path']}`**: {finding['migration_note']}")
+
+    # Sponsor Footer
+    lines += [
+        "",
+        "---",
+        "💡 *Downstream Breakage Radar is free and open-source. If it helped protect your release, consider [sponsoring @Tahiram32 on GitHub](https://github.com/sponsors/Tahiram32)!*"
+    ]
 
     return "\n".join(lines)
 
