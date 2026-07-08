@@ -1,0 +1,92 @@
+"""Output formatting for scan reports.
+
+Supports plain text, JSON, and Markdown (suitable for PR comments).
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Emoji / badge helpers
+# ---------------------------------------------------------------------------
+
+_SEVERITY_EMOJI: dict[str, str] = {
+    "high": "🔴",
+    "medium": "🟡",
+    "low": "🟢",
+    "none": "⚪",
+}
+
+_SEVERITY_LABEL: dict[str, str] = {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "none": "None",
+}
+
+
+# ---------------------------------------------------------------------------
+# Formatters
+# ---------------------------------------------------------------------------
+
+def format_text(report: dict[str, Any]) -> str:
+    """Format *report* as human-readable plain text."""
+
+    lines = [
+        f"Risk level: {report['risk_level']}",
+        f"Changed files: {report['change_count']}",
+        f"Findings: {report['finding_count']}",
+    ]
+    for finding in report["findings"]:
+        lines.append("")
+        lines.append(f"- [{finding['severity']}] {finding['path']}: {finding['message']}")
+        lines.append(f"  Migration note: {finding['migration_note']}")
+    if not report["findings"]:
+        lines.append("")
+        lines.append("No obvious breakage risks found.")
+    return "\n".join(lines)
+
+
+def format_json(report: dict[str, Any]) -> str:
+    """Format *report* as pretty-printed JSON."""
+
+    return json.dumps(report, indent=2, sort_keys=True)
+
+
+def format_markdown(report: dict[str, Any]) -> str:
+    """Format *report* as GitHub-Flavoured Markdown suitable for PR comments."""
+
+    risk = report["risk_level"]
+    emoji = _SEVERITY_EMOJI.get(risk, "⚪")
+    label = _SEVERITY_LABEL.get(risk, risk)
+
+    lines: list[str] = [
+        "## 📡 Downstream Breakage Radar",
+        "",
+        f"**Risk level:** {emoji} {label}  ",
+        f"**Changed files:** {report['change_count']}  ",
+        f"**Findings:** {report['finding_count']}",
+    ]
+
+    if not report["findings"]:
+        lines += ["", "✅ No obvious breakage risks found."]
+        return "\n".join(lines)
+
+    lines += ["", "| Severity | File | Message |", "| --- | --- | --- |"]
+
+    for finding in report["findings"]:
+        sev = finding["severity"]
+        sev_emoji = _SEVERITY_EMOJI.get(sev, "")
+        lines.append(
+            f"| {sev_emoji} {sev} | `{finding['path']}` | {finding['message']} |"
+        )
+
+    # Detailed migration notes
+    lines += ["", "### Migration notes", ""]
+    for finding in report["findings"]:
+        lines.append(f"- **`{finding['path']}`**: {finding['migration_note']}")
+
+    return "\n".join(lines)

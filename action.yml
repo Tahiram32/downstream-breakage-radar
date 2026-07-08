@@ -1,0 +1,51 @@
+name: "Downstream Breakage Radar"
+description: "Detects breaking changes before release and generates migration notes."
+author: "Tahiram32"
+
+inputs:
+  base-ref:
+    description: "The base git ref to diff against."
+    required: false
+    default: "origin/main"
+  format:
+    description: "The output format (text, json, markdown)."
+    required: false
+    default: "markdown"
+  fail-on:
+    description: "The risk level at which to fail the step (none, low, medium, high)."
+    required: false
+    default: "high"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install package
+      shell: bash
+      run: python -m pip install -e ${{ github.action_path }}
+
+    - name: Run breakage radar
+      shell: bash
+      id: scan
+      run: |
+        # Run and capture output
+        OUTPUT=$(breakage-radar --repo ${{ github.workspace }} --base ${{ inputs.base-ref }} --format ${{ inputs.format }} --fail-on ${{ inputs.fail-on }})
+        EXIT_CODE=$?
+        
+        # Save output to a file for potential comment usage
+        echo "$OUTPUT" > breakage-report.md
+        
+        # If markdown, try to post as a PR comment
+        if [ "${{ inputs.format }}" = "markdown" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
+          gh pr comment ${{ github.event.pull_request.number }} --body-file breakage-report.md || echo "Failed to post PR comment. GH_TOKEN may not have permission."
+        else
+          echo "$OUTPUT"
+        fi
+        
+        exit $EXIT_CODE
+      env:
+        GH_TOKEN: ${{ github.token }}

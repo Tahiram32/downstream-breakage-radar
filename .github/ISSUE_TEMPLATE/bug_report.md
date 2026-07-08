@@ -1,0 +1,37 @@
+<![CDATA[---
+name: Bug Report
+about: Report a bug to help us improve Downstream Breakage Radar
+title: "[Bug] "
+labels: bug
+assignees: ""
+---
+
+## Describe the bug
+
+A clear and concise description of what the bug is.
+
+## Steps to reproduce
+
+1. Run `breakage-radar --repo ... --base ...`
+2. See error / unexpected output
+
+## Expected behavior
+
+What you expected to happen.
+
+## Actual behavior
+
+What actually happened. Include the full output or error message.
+
+## Environment
+
+- **OS**: [e.g., Ubuntu 22.04, macOS 14, Windows 11]
+- **Python version**: [e.g., 3.11.4]
+- **Git version**: [e.g., 2.42.0]
+- **downstream-breakage-radar version**: [e.g., 0.1.0]
+- **Installation method**: [e.g., `pip install`, `pip install -e .`, GitHub Action]
+
+## Additional context
+
+Add any other context about the problem here (screenshots, log output, related issues, etc.).
+]]>

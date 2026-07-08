@@ -1,121 +1,28 @@
 from __future__ import annotations
 
 import argparse
-import json
-import subprocess
-from dataclasses import asdict, dataclass
+import sys
 from pathlib import Path
-from typing import Iterable
 
-
-RISKY_PATH_MARKERS = (
-    "src/",
-    "lib/",
-    "app/",
-    "api/",
-    "public/",
-    "include/",
-    "internal/",
-    "pkg/",
-    "schemas/",
-    "proto/",
-    "openapi",
-)
-
-RISKY_FILENAMES = {
-    "package.json",
-    "pyproject.toml",
-    "setup.py",
-    "setup.cfg",
-    "go.mod",
-    "Cargo.toml",
-    "pom.xml",
-    "build.gradle",
-    "gradle.properties",
-}
-
-
-@dataclass(frozen=True)
-class Finding:
-    severity: str
-    path: str
-    message: str
-    migration_note: str
-
-
-def git_changed_files(repo_path: Path, base_ref: str) -> list[str]:
-    completed = subprocess.run(
-        ["git", "-C", str(repo_path), "diff", "--name-only", f"{base_ref}...HEAD"],
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-
-
-def detect_risk(changed_files: Iterable[str]) -> list[Finding]:
-    findings: list[Finding] = []
-    for path in changed_files:
-        lowered = path.lower()
-        filename = Path(path).name
-        if filename in RISKY_FILENAMES or any(marker in lowered for marker in RISKY_PATH_MARKERS):
-            findings.append(
-                Finding(
-                    severity="medium",
-                    path=path,
-                    message="Change touches a likely public surface or release-critical file.",
-                    migration_note="Review for API compatibility, config drift, and release notes before merging.",
-                )
-            )
-        if lowered.endswith((".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java", ".kt", ".cs")):
-            findings.append(
-                Finding(
-                    severity="low",
-                    path=path,
-                    message="Source code change may affect downstream consumers.",
-                    migration_note="Check for renamed symbols, changed defaults, and behavior shifts.",
-                )
-            )
-    return findings
-
-
-def summarize(findings: list[Finding], changed_files: list[str]) -> dict[str, object]:
-    highest = "none"
-    if any(f.severity == "medium" for f in findings):
-        highest = "medium"
-    elif findings:
-        highest = "low"
-
-    return {
-        "changed_files": changed_files,
-        "change_count": len(changed_files),
-        "risk_level": highest,
-        "finding_count": len(findings),
-        "findings": [asdict(finding) for finding in findings],
-    }
-
-
-def format_text(report: dict[str, object]) -> str:
-    lines = [
-        f"Risk level: {report['risk_level']}",
-        f"Changed files: {report['change_count']}",
-        f"Findings: {report['finding_count']}",
-    ]
-    for finding in report["findings"]:
-        lines.append("")
-        lines.append(f"- [{finding['severity']}] {finding['path']}: {finding['message']}")
-        lines.append(f"  Migration note: {finding['migration_note']}")
-    if not report["findings"]:
-        lines.append("")
-        lines.append("No obvious breakage risks found.")
-    return "\n".join(lines)
+from downstream_breakage_radar import diff_analyzer, reporter, scanner
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Detect likely downstream breakage before release.")
     parser.add_argument("--repo", default=".", help="Path to the repository to scan.")
     parser.add_argument("--base", default="origin/main", help="Base ref for git diff.")
-    parser.add_argument("--format", choices=("text", "json"), default="text", help="Output format.")
+    parser.add_argument(
+        "--format",
+        choices=("text", "json", "markdown"),
+        default="text",
+        help="Output format."
+    )
+    parser.add_argument(
+        "--fail-on",
+        choices=("none", "low", "medium", "high"),
+        default="high",
+        help="Fail (exit code 1) if overall risk level is >= this severity.",
+    )
     return parser
 
 
@@ -124,17 +31,35 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_path = Path(args.repo).resolve()
-    changed_files = git_changed_files(repo_path, args.base)
-    report = summarize(detect_risk(changed_files), changed_files)
+    
+    # Run the core detection
+    changed_files = scanner.git_changed_files(repo_path, args.base)
+    deleted_files = scanner.git_deleted_files(repo_path, args.base)
+    diff_text = scanner.git_diff(repo_path, args.base)
 
+    findings = scanner.detect_risk(changed_files)
+    findings.extend(diff_analyzer.analyze_diff(diff_text, deleted_files))
+
+    report = scanner.summarize(findings, changed_files)
+
+    # Output
     if args.format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
+        print(reporter.format_json(report))
+    elif args.format == "markdown":
+        print(reporter.format_markdown(report))
     else:
-        print(format_text(report))
+        print(reporter.format_text(report))
+
+    # Exit code based on fail-on
+    if args.fail_on != "none":
+        risk = report["risk_level"]
+        order = scanner.SEVERITY_ORDER
+        if order.get(risk, 0) >= order.get(args.fail_on, 0):
+            print(f"\nError: Overall risk level '{risk}' exceeds threshold '{args.fail_on}'.", file=sys.stderr)
+            return 1
 
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -9,7 +9,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from downstream_breakage_radar.cli import detect_risk, summarize
+from downstream_breakage_radar.scanner import detect_risk, summarize
+from downstream_breakage_radar.diff_analyzer import analyze_diff
 
 
 class DetectRiskTests(unittest.TestCase):
@@ -23,6 +24,21 @@ class DetectRiskTests(unittest.TestCase):
         self.assertEqual(report["change_count"], 1)
         self.assertEqual(report["risk_level"], "none")
 
+class DiffAnalyzerTests(unittest.TestCase):
+    def test_removed_function(self) -> None:
+        diff_text = """diff --git a/src/api.py b/src/api.py
+--- a/src/api.py
++++ b/src/api.py
+@@ -1,5 +1,4 @@
+-def removed_func():
+-    pass
++def new_func():
++    pass
+"""
+        findings = analyze_diff(diff_text)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].severity, "high")
+        self.assertIn("removed_func", findings[0].message)
 
 if __name__ == "__main__":
     unittest.main()
