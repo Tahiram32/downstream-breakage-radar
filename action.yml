@@ -62,12 +62,9 @@ runs:
         # Save output to a file for potential comment usage
         echo "$OUTPUT" > breakage-report.md
         
-        # If markdown, try to post as a PR comment
-        if [ "${{ inputs.format }}" = "markdown" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
-          gh pr comment ${{ github.event.pull_request.number }} --body-file breakage-report.md || echo "Failed to post PR comment. GH_TOKEN may not have permission."
-        else
-          echo "$OUTPUT"
-        fi
+        # Inject beautiful markdown report directly into GitHub UI
+        echo "## 🛡️ BreakGuard Downstream Impact Report" >> $GITHUB_STEP_SUMMARY
+        echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
         
         exit $EXIT_CODE
       env:

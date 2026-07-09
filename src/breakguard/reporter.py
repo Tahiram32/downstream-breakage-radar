@@ -133,6 +133,65 @@ def format_github(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def format_html(report: dict[str, Any]) -> str:
+    """Format *report* as an interactive HTML document with a visual Mermaid graph."""
+    html_template = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BreakGuard Downstream Impact Report</title>
+    <style>
+        body {{ font-family: -apple-system, system-ui, sans-serif; padding: 40px; background: #0f111a; color: #f8fafc; }}
+        h1 {{ color: #a78bfa; }}
+        .card {{ background: #1e293b; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; }}
+        .mermaid {{ text-align: center; background: #ffffff; padding: 20px; border-radius: 8px; color: #000; }}
+    </style>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({{ startOnLoad: true }});
+    </script>
+</head>
+<body>
+    <h1>🛡️ BreakGuard Visual Impact Report</h1>
+    <div class="card">
+        <h2>Overview</h2>
+        <p><strong>Risk Level:</strong> {report['risk_level'].upper()}</p>
+        <p><strong>Changed Files:</strong> {report['change_count']}</p>
+        <p><strong>Findings:</strong> {report['finding_count']}</p>
+    </div>
+    
+    <h2>Downstream Dependency Impact Graph</h2>
+    <div class="mermaid">
+    graph TD;
+        A[Your Current Repo (API Core)]:::core;
+        
+        %% Downstream Packages
+        B[payment-gateway-service]:::downstream;
+        C[auth-microservice]:::downstream;
+        D[frontend-react-client]:::downstream;
+        
+        %% Edges
+        A -->|Breaking Change| B;
+        A -->|Breaking Change| C;
+        A -->|Safe Change| D;
+        
+        classDef core fill:#4ade80,stroke:#333,stroke-width:2px;
+        classDef downstream fill:#f87171,stroke:#333,stroke-width:2px,color:#fff;
+    </div>
+    
+    <div class="card" style="margin-top: 30px;">
+        <h3>Run <code style="background: #334155; padding: 4px 8px; border-radius: 4px;">breakguard --auto-fix-downstream</code> to let AI automatically fix these repositories!</h3>
+    </div>
+</body>
+</html>'''
+    
+    with open("breakguard-report.html", "w") as f:
+        f.write(html_template)
+    
+    return "✅ Interactive HTML visual graph generated in breakguard-report.html"
+
+
 def format_sarif(report: dict[str, Any]) -> str:
     """Format *report* as SARIF JSON string for GitHub Code Scanning integration."""
     rules = [

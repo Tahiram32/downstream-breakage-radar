@@ -13,7 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base", default="origin/main", help="Base ref for git diff.")
     parser.add_argument(
         "--format",
-        choices=("text", "json", "markdown", "github", "sarif"),
+        choices=("text", "json", "markdown", "github", "sarif", "html"),
         default="text",
         help="Output format."
     )
@@ -33,6 +33,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Generate a markdown API changelog (breakage-radar-changelog.md).",
     )
+    parser.add_argument(
+        "--auto-fix-downstream",
+        action="store_true",
+        help="Automatically open PRs on downstream repositories to fix breakages.",
+    )
+    
+    if len(sys.argv) == 1:
+        from breakguard import wizard
+        wizard.run()
+        sys.exit(0)
+        
     return parser
 
 
@@ -127,8 +138,16 @@ def main() -> int:
         print(reporter.format_github(report))
     elif args.format == "sarif":
         print(reporter.format_sarif(report))
+    elif args.format == "html":
+        print(reporter.format_html(report))
     else:
         print(reporter.format_text(report))
+
+    if getattr(args, "auto_fix_downstream", False):
+        from breakguard import auto_fix
+        # Mock downstream projects for demonstration
+        downstreams = ["payment-gateway-service", "auth-microservice", "frontend-react-client"]
+        auto_fix.fix_downstream(report["findings"], downstreams)
 
     # Exit code based on fail-on
     if args.fail_on != "none":
